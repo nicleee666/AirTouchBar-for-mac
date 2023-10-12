@@ -4,6 +4,14 @@
 
 AirTouchBar allows you to control your MacBook's Touch Bar using hand gestures. Built on Python and MediaPipe, it uses computer vision to recognize hand movements and translate them into Touch Bar actions.
 
+## Usage
+when the application starts, different hand gesture indicates different touchbar actions.
+
+- Closed fist - play/pause music
+- pinch hand - adjust volume
+- palm facing left - last track
+- palm facing right - next track
+
 ## Requirements
 
 - Python 3.8+
