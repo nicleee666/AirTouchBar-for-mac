@@ -1,4 +1,4 @@
-# AirTouchBar for Mac
+## AirTouchBar for Mac
 
 ## Overview
 
