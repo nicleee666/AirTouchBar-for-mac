@@ -7,6 +7,9 @@ from hand_detector import HandDetector
 action_start_time = None
 current_action = None
 action_performed = False
+# Flag for enabling/disabling actions
+enable_actions = False
+
 
 # AppleScript Functions
 def set_volume(level):
@@ -48,13 +51,13 @@ def control_volume(landmark_list, current_volume):
     
     if current_time - last_time >= 1:  # One second has passed
         if length < 40:  # Voluming down
-            current_volume = max(0, current_volume - 10)  # Decrease by 5 Apple volume bar
+            current_volume = max(0, current_volume - 20)  # Decrease by 5 Apple volume bar
         elif length < 110:
-            current_volume = max(0, current_volume - 5) 
+            current_volume = max(0, current_volume - 10) 
         elif length < 170:  # Voluming up
-            current_volume = min(100, current_volume + 5)  # Increase by one Apple volume bar
+            current_volume = min(100, current_volume + 10)  # Increase by one Apple volume bar
         else:
-            current_volume = min(100, current_volume + 10) 
+            current_volume = min(100, current_volume + 20) 
         set_volume(int(current_volume))
         last_time = current_time  # Update last_time
     
@@ -74,9 +77,33 @@ def soundtrack_selection(landmark_list):
         #time.sleep(1)  # Delay to prevent rapid track changes
         return 'last track'
 
+def is_victory(landmark_list):
+    index_tip = landmark_list[8]
+    middle_tip = landmark_list[12]
+    ring_tip = landmark_list[16]
+    pinky_tip = landmark_list[20]
+    thumb_tip = landmark_list[4]
+    wrist = landmark_list[0]
+
+    # Calculate distances from wrist to each fingertip
+    wrist_index = math.sqrt((wrist[1] - index_tip[1]) ** 2 + (wrist[2] - index_tip[2]) ** 2)
+    wrist_middle = math.sqrt((wrist[1] - middle_tip[1]) ** 2 + (wrist[2] - middle_tip[2]) ** 2)
+    wrist_ring = math.sqrt((wrist[1] - ring_tip[1]) ** 2 + (wrist[2] - ring_tip[2]) ** 2)
+    wrist_pinky = math.sqrt((wrist[1] - pinky_tip[1]) ** 2 + (wrist[2] - pinky_tip[2]) ** 2)
+    wrist_thumb = math.sqrt((wrist[1] - thumb_tip[1]) ** 2 + (wrist[2] - thumb_tip[2]) ** 2)
+
+    # Check if index and middle fingers are extended
+    if wrist_index > 150 and wrist_middle > 150:
+        # Check if other fingers are closed
+        if all(dist < 120 for dist in [wrist_ring, wrist_pinky, wrist_thumb]):
+            return True
+    return False
+
+
 def is_pinch(landmark_list):
     if len(landmark_list) < 21:  # Mediapipe hand model has 21 landmarks
         return False
+
     thumb_tip = landmark_list[4]
     index_tip = landmark_list[8]
     middle_tip = landmark_list[12]
@@ -84,15 +111,18 @@ def is_pinch(landmark_list):
     pinky_tip = landmark_list[20]
     wrist = landmark_list[0]
     
-    
+    wrist_thumb = math.sqrt((wrist[1] - thumb_tip[1]) ** 2 + (wrist[2] - thumb_tip[2]) ** 2)
+    wrist_index = math.sqrt((wrist[1] - index_tip[1]) ** 2 + (wrist[2] - index_tip[2]) ** 2)
+    wrist_middle = math.sqrt((wrist[1] - middle_tip[1]) ** 2 + (wrist[2] - middle_tip[2]) ** 2)
     wrist_ring = math.sqrt((wrist[1] - ring_tip[1]) ** 2 + (wrist[2] - ring_tip[2]) ** 2)
-    wrist_index =math.sqrt((wrist[1] - index_tip[1]) ** 2 + (wrist[2] - index_tip[2]) ** 2) 
+    wrist_pinky = math.sqrt((wrist[1] - pinky_tip[1]) ** 2 + (wrist[2] - pinky_tip[2]) ** 2)
 
-    # Check if thumb is far enough from all other fingertips
-    if wrist_ring < 130 and wrist_index >160:
+    # Check if thumb and index are far enough from the wrist and other fingers are close to the wrist
+    if wrist_index > 160 and wrist_thumb > 160 and all(dist < 130 for dist in [wrist_middle, wrist_ring, wrist_pinky]):
         return True
     
     return False
+
 
 def is_palm(landmark_list):
     thumb_tip = landmark_list[4]
@@ -119,14 +149,15 @@ def is_fist(landmard_list):
     pinky_tip = landmark_list[20]
     wrist = landmark_list[0]
 
+
     wrist_ring = math.sqrt((wrist[1] - ring_tip[1]) ** 2 + (wrist[2] - ring_tip[2]) ** 2) 
     wrist_index =math.sqrt((wrist[1] - index_tip[1]) ** 2 + (wrist[2] - index_tip[2]) ** 2) 
     wrist_middle =math.sqrt((wrist[1] - middle_tip[1]) ** 2 + (wrist[2] - middle_tip[2]) ** 2) 
-    wrist_pinky =math.sqrt((wrist[1] - pinky_tip[1]) ** 2 + (wrist[2] - pinky_tip[2]) ** 2) 
-
+    wrist_pinky =math.sqrt((wrist[1] - pinky_tip[1]) ** 2 + (wrist[2] - pinky_tip[2]) ** 2)
+    
     if all(dist < 150 for dist in [wrist_ring, wrist_index, wrist_middle, wrist_pinky]):
         return True
-    return False 
+    return False
 
 
 detector = HandDetector()
@@ -146,8 +177,9 @@ while True:
     
     current_time = time.time()
 
-    if current_time - last_action_time >= 2:  # 2 seconds threshold for a new action
+    if current_time - last_action_time >= 3:  # 3 seconds threshold for a new action
         if landmark_list:
+                
             if is_pinch(landmark_list):
                 current_volume = get_volume()
                 volume = control_volume(landmark_list, current_volume)
