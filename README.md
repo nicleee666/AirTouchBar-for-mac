@@ -12,6 +12,11 @@ when the application starts, different hand gesture indicates different touchbar
 - palm facing left - last track
 - palm facing right - next track
 
+## Demo
+
+<iframe width="560" height="315" src="[https://www.youtube.com/embed/VIDEO_ID](https://www.youtube.com/watch?v=_3HRL63dFGE)" frameborder="0" allowfullscreen></iframe>
+
+
 ## Requirements
 
 - Python 3.8+
